@@ -36,30 +36,30 @@ def _to_minutes(seconds):
     return '%d:%d' % divmod(seconds, 60)
 
 
-def _volume_command(ramp, volume):
+def _volume_command(cast, volume):
     """ Set the value if a volume level is provided, else print the current
     volume level. """
     if volume is not None:
-        ramp.set_volume(float(volume))
+        cast.set_volume(float(volume))
     else:
-        print ramp.volume
+        print cast.status.volume_level
 
 
-def _status_command(cast, ramp):
+def _status_command(cast, mc):
     """ Build a nice status message and print it to stdout. """
-    if ramp.is_playing:
+    if mc.is_playing:
         play_symbol = u'\u25B6'
     else:
         play_symbol = u'\u2759\u2759'
 
     print u' %s %s by %s from %s via %s, %s of %s' % (
         play_symbol,
-        ramp.title,
-        ramp.artist,
-        ramp.album,
-        cast.app.app_id,
-        _to_minutes(ramp.current_time),
-        _to_minutes(ramp.duration)
+        mc.title,
+        (mc.artist if hasattr(mc, "artist") else "Unknown artist"),
+        (mc.album if hasattr(mc, "album") else "Unknown album"),
+        cast.app_id,
+        _to_minutes(mc.status.current_time),
+        _to_minutes(mc.status.duration)
     )
 
 
@@ -70,32 +70,38 @@ def main():
     """
     opts = docopt(__doc__, version="cast 0.1")
 
-    cast = pychromecast.PyChromecast(CHROMECAST_HOST)
-    ramp = cast.get_protocol(pychromecast.PROTOCOL_RAMP)
+    cast = pychromecast.Chromecast(CHROMECAST_HOST)
+    mc = cast.media_controller
 
     # Wait for ramp connection to be initted.
     time.sleep(SLEEP_TIME)
 
-    if ramp is None:
-        print 'Chromecast is not up or current app does not handle RAMP.'
+    if mc is None:
+        print 'Chromecast is not up or something else is wrong'
         return 1
 
+    print opts
+
     if opts['next']:
-        ramp.next()
+        # next in old version is skip in the new version?
+        mc.skip()
     elif opts['pause']:
-        ramp.pause()
+        mc.pause()
     elif opts['play']:
-        ramp.play()
+        mc.play()
     elif opts['toggle']:
-        ramp.playpause()
+        print "Doesn't work?"
+        mc.playpause()
     elif opts['seek']:
-        ramp.seek(opts['<second>'])
+        mc.seek(opts['<second>'])
     elif opts['rewind']:
-        ramp.rewind()
+        mc.rewind()
     elif opts['status']:
-        _status_command(cast, ramp)
+        _status_command(cast, mc)
     elif opts['volume']:
-        _volume_command(ramp, opts['<value>'])
+        _volume_command(cast, opts['<value>'])
 
     # Wait for command to be sent.
     time.sleep(SLEEP_TIME)
+
+main()
