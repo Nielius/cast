@@ -90,8 +90,10 @@ def main():
     elif opts['play']:
         mc.play()
     elif opts['toggle']:
-        print "Doesn't work?"
-        mc.playpause()
+        if mc.is_playing:
+            mc.pause()
+        elif mc.is_paused:
+            mc.play()
     elif opts['seek']:
         mc.seek(opts['<second>'])
     elif opts['rewind']:
